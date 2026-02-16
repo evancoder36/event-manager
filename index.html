@@ -1735,7 +1735,6 @@
                 data-client_id="216186738747-71h2f03h0n0eium9no0u8orfin6m6gsd.apps.googleusercontent.com"
                 data-context="signin"
                 data-ux_mode="popup"
-                data-login_uri=""
                 data-auto_prompt="false"
                 data-callback="handleGoogleSignIn">
             </div>
@@ -3624,8 +3623,8 @@
                 // Extract user information from Google profile
                 const googleId = payload.sub;
                 const email = payload.email;
-                const firstName = payload.given_name || payload.name.split(' ')[0];
-                const lastName = payload.family_name || payload.name.split(' ').slice(1).join(' ') || 'User';
+                const firstName = payload.given_name || (payload.name ? payload.name.split(' ')[0] : 'User');
+                const lastName = payload.family_name || (payload.name ? payload.name.split(' ').slice(1).join(' ') : '') || 'User';
                 const picture = payload.picture;
                 
                 // Check if user already exists
@@ -3658,7 +3657,8 @@
                     firstName: user.firstName,
                     lastName: user.lastName,
                     avatar: user.firstName.charAt(0).toUpperCase(),
-                    picture: user.picture
+                    picture: user.picture,
+                    authProvider: 'google'
                 };
                 
                 localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
