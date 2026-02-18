@@ -892,6 +892,18 @@
             background: var(--primary);
         }
 
+        .filter-dropdown-item:hover,
+        .sort-dropdown-item:hover {
+            background: var(--gray-100);
+        }
+
+        .filter-dropdown-item.active,
+        .sort-dropdown-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary) !important;
+            font-weight: 600;
+        }
+
         .events-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -2094,15 +2106,37 @@
                         <button class="filter-tab" onclick="filterEvents('past')">Past</button>
                         <button class="filter-tab" onclick="filterEvents('draft')">Drafts</button>
                     </div>
-                    <div style="display: flex; gap: 12px;">
-                        <button class="btn btn-outline btn-sm">
-                            <i class="fas fa-filter"></i>
-                            Filter
-                        </button>
-                        <button class="btn btn-outline btn-sm">
-                            <i class="fas fa-sort"></i>
-                            Sort
-                        </button>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <div style="position: relative;">
+                            <button class="btn btn-outline btn-sm" onclick="toggleFilterDropdown()">
+                                <i class="fas fa-filter"></i>
+                                <span id="filterLabel">Filter</span>
+                            </button>
+                            <div id="filterDropdown" style="display:none; position:absolute; top:100%; right:0; margin-top:8px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.15); padding:8px; z-index:100; min-width:160px;">
+                                <div class="filter-dropdown-item" onclick="applyCategoryFilter('')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">All Categories</div>
+                                <div class="filter-dropdown-item" onclick="applyCategoryFilter('Conference')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Conference</div>
+                                <div class="filter-dropdown-item" onclick="applyCategoryFilter('Meeting')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Meeting</div>
+                                <div class="filter-dropdown-item" onclick="applyCategoryFilter('Workshop')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Workshop</div>
+                                <div class="filter-dropdown-item" onclick="applyCategoryFilter('Social')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Social</div>
+                                <div class="filter-dropdown-item" onclick="applyCategoryFilter('Party')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Party</div>
+                                <div class="filter-dropdown-item" onclick="applyCategoryFilter('Sports')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Sports</div>
+                                <div class="filter-dropdown-item" onclick="applyCategoryFilter('Wedding')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Wedding</div>
+                            </div>
+                        </div>
+                        <div style="position: relative;">
+                            <button class="btn btn-outline btn-sm" onclick="toggleSortDropdown()">
+                                <i class="fas fa-sort"></i>
+                                <span id="sortLabel">Sort</span>
+                            </button>
+                            <div id="sortDropdown" style="display:none; position:absolute; top:100%; right:0; margin-top:8px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.15); padding:8px; z-index:100; min-width:180px;">
+                                <div class="sort-dropdown-item" onclick="applySortOrder('date-asc')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Date (Earliest first)</div>
+                                <div class="sort-dropdown-item" onclick="applySortOrder('date-desc')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Date (Latest first)</div>
+                                <div class="sort-dropdown-item" onclick="applySortOrder('name-asc')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Name (A-Z)</div>
+                                <div class="sort-dropdown-item" onclick="applySortOrder('name-desc')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Name (Z-A)</div>
+                                <div class="sort-dropdown-item" onclick="applySortOrder('created-desc')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Newest created</div>
+                                <div class="sort-dropdown-item" onclick="applySortOrder('created-asc')" style="padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--text-primary);">Oldest created</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -4670,28 +4704,108 @@
         }
 
         function filterEvents(filter) {
-            document.querySelectorAll('.filter-tab').forEach(tab => {
+            currentTabFilter = filter;
+            document.querySelectorAll('#eventsSection .filter-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             event.target.classList.add('active');
-            
+            applyFiltersAndSort();
+        }
+
+        // Filter & Sort State
+        let currentCategoryFilter = '';
+        let currentSortOrder = '';
+        let currentTabFilter = 'all';
+
+        function toggleFilterDropdown() {
+            const dd = document.getElementById('filterDropdown');
+            const sortDd = document.getElementById('sortDropdown');
+            sortDd.style.display = 'none';
+            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleSortDropdown() {
+            const dd = document.getElementById('sortDropdown');
+            const filterDd = document.getElementById('filterDropdown');
+            filterDd.style.display = 'none';
+            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function applyCategoryFilter(category) {
+            currentCategoryFilter = category;
+            document.getElementById('filterLabel').textContent = category || 'Filter';
+            document.getElementById('filterDropdown').style.display = 'none';
+
+            // Update active state
+            document.querySelectorAll('.filter-dropdown-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            applyFiltersAndSort();
+        }
+
+        function applySortOrder(order) {
+            currentSortOrder = order;
+            const labels = {
+                'date-asc': 'Date ↑',
+                'date-desc': 'Date ↓',
+                'name-asc': 'A-Z',
+                'name-desc': 'Z-A',
+                'created-desc': 'Newest',
+                'created-asc': 'Oldest'
+            };
+            document.getElementById('sortLabel').textContent = labels[order] || 'Sort';
+            document.getElementById('sortDropdown').style.display = 'none';
+
+            // Update active state
+            document.querySelectorAll('.sort-dropdown-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            applyFiltersAndSort();
+        }
+
+        function applyFiltersAndSort() {
             const today = new Date().toISOString().split('T')[0];
-            let filteredEvents = events;
-            
-            switch(filter) {
+            let filtered = [...events];
+
+            // Apply tab filter
+            switch (currentTabFilter) {
                 case 'upcoming':
-                    filteredEvents = events.filter(e => e.date >= today);
+                    filtered = filtered.filter(e => e.date >= today);
                     break;
                 case 'past':
-                    filteredEvents = events.filter(e => e.date < today);
+                    filtered = filtered.filter(e => e.date < today);
                     break;
                 case 'draft':
-                    filteredEvents = [];
+                    filtered = [];
                     break;
             }
-            
+
+            // Apply category filter
+            if (currentCategoryFilter) {
+                filtered = filtered.filter(e => e.category === currentCategoryFilter);
+            }
+
+            // Apply sort
+            if (currentSortOrder) {
+                filtered.sort((a, b) => {
+                    switch (currentSortOrder) {
+                        case 'date-asc': return a.date.localeCompare(b.date);
+                        case 'date-desc': return b.date.localeCompare(a.date);
+                        case 'name-asc': return a.title.localeCompare(b.title);
+                        case 'name-desc': return b.title.localeCompare(a.title);
+                        case 'created-desc': return (b.createdAt || '').localeCompare(a.createdAt || '');
+                        case 'created-asc': return (a.createdAt || '').localeCompare(b.createdAt || '');
+                        default: return 0;
+                    }
+                });
+            }
+
             const container = document.getElementById('allEvents');
-            if (filteredEvents.length === 0) {
+            if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-search"></i>
@@ -4700,9 +4814,19 @@
                     </div>
                 `;
             } else {
-                container.innerHTML = filteredEvents.map(event => createEventCard(event)).join('');
+                container.innerHTML = filtered.map(ev => createEventCard(ev)).join('');
             }
         }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#filterDropdown') && !e.target.closest('[onclick*="toggleFilterDropdown"]')) {
+                document.getElementById('filterDropdown').style.display = 'none';
+            }
+            if (!e.target.closest('#sortDropdown') && !e.target.closest('[onclick*="toggleSortDropdown"]')) {
+                document.getElementById('sortDropdown').style.display = 'none';
+            }
+        });
 
         // Templates
         function useTemplate(template) {
