@@ -1658,7 +1658,7 @@
             }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .stats-grid {
                 grid-template-columns: 1fr;
             }
@@ -1692,6 +1692,16 @@
             .analytics-grid {
                 grid-template-columns: 1fr;
             }
+            /* Mobile: sidebar management */
+            #sidebarOverlay { display: none; }
+        }
+        @media (max-width: 900px) {
+            .sidebar { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); transition: transform .25s ease; z-index: 1000; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            #sidebarToggleBtn { display: inline-flex; position: fixed; top: 12px; left: 12px; z-index: 1100; }
+            #sidebarOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.4); z-index: 999; }
+            #sidebarOverlay.active { display: block; }
         }
     </style>
 </head>
@@ -1939,14 +1949,18 @@
                 </div>
             </nav>
             
-            <div class="sidebar-footer">
-                <div class="user-profile" onclick="logout()">
+            <div class="sidebar-footer" style="position: relative;">
+                <div class="user-profile" onclick="toggleProfileMenu(event)" style="cursor: pointer;">
                     <div class="user-avatar" id="userAvatar">JD</div>
                     <div class="user-info">
                         <div class="user-name" id="userName">John Doe</div>
                         <div class="user-email" id="userEmail">john@example.com</div>
                     </div>
-                    <i class="fas fa-sign-out-alt" style="color: var(--text-secondary);"></i>
+                    <i class="fas fa-caret-down" id="profileCaret" style="color: var(--gray-400);"></i>
+                </div>
+                <div id="profileMenu" class="profile-menu" style="display:none; position: absolute; bottom: 66px; left: 8px; background: white; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.15); overflow: hidden; z-index: 1000;">
+                    <div class="profile-menu-item" onclick="showSection('settings'); closeProfileMenu()">Profile</div>
+                    <div class="profile-menu-item" onclick="logout(); closeProfileMenu()">Sign Out</div>
                 </div>
             </div>
         </aside>
@@ -1991,6 +2005,11 @@
                     </button>
                 </div>
             </header>
+            <!-- Mobile Navigation Toggle -->
+            <button id="sidebarToggleBtn" class="btn btn-outline" onclick="toggleSidebar()" aria-label="Open menu" title="Menu" style="display:none; position: fixed; top: 12px; left: 12px; z-index: 1100;">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
             <!-- Dashboard Section -->
             <section class="content-section active" id="dashboardSection">
@@ -3249,6 +3268,32 @@
             createDemoUser();
             checkAuth();
             setupEventListeners();
+            // Initialize responsive UI for mobile
+            if (window.innerWidth <= 900) {
+                const btn = document.getElementById('sidebarToggleBtn');
+                if (btn) btn.style.display = 'inline-flex';
+            }
+            window.addEventListener('resize', () => {
+                if (window.innerWidth <= 900) {
+                    const btn = document.getElementById('sidebarToggleBtn');
+                    if (btn) btn.style.display = 'inline-flex';
+                } else {
+                    const btn = document.getElementById('sidebarToggleBtn');
+                    if (btn) btn.style.display = 'none';
+                    // Ensure sidebar is visible when switching back to desktop
+                    const sidebar = document.querySelector('.sidebar');
+                    if (sidebar) { sidebar.classList.remove('open'); }
+                    const overlay = document.getElementById('sidebarOverlay');
+                    if (overlay) overlay.classList.remove('active');
+                }
+                // Auto-close sidebar if window expands beyond breakpoint
+                if (window.innerWidth > 900) {
+                    const s = document.querySelector('.sidebar');
+                    if (s) s.classList.remove('open');
+                    const o = document.getElementById('sidebarOverlay');
+                    if (o) o.classList.remove('active');
+                }
+            });
         });
 
         // Create demo user if no users exist
@@ -3782,7 +3827,7 @@
             document.getElementById('userName').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
             document.getElementById('userEmail').textContent = currentUser.email;
             document.getElementById('userAvatar').textContent = currentUser.avatar;
-            document.getElementById('settingsFullNameDisplay').textContent = currentUser.firstName;
+            document.getElementById('settingsFirstNameDisplay').textContent = currentUser.firstName;
             document.getElementById('settingsLastNameDisplay').textContent = currentUser.lastName;
             document.getElementById('settingsEmailDisplay').textContent = currentUser.email;
             document.getElementById('settingsFirstName').value = currentUser.firstName;
@@ -5740,6 +5785,35 @@ For more help, visit our Help Center.`;
         });
 
         // Event Listeners
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (!sidebar) return;
+            if (sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                if (overlay) overlay.classList.remove('active');
+            } else {
+                sidebar.classList.add('open');
+                if (overlay) overlay.classList.add('active');
+            }
+        }
+
+        function toggleProfileMenu(_e) {
+            const menu = document.getElementById('profileMenu');
+            const caret = document.getElementById('profileCaret');
+            if (!menu) return;
+            const isOpen = menu.style.display === 'block';
+            menu.style.display = isOpen ? 'none' : 'block';
+            if (caret) caret.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        function closeProfileMenu() {
+            const menu = document.getElementById('profileMenu');
+            const caret = document.getElementById('profileCaret');
+            if (menu) menu.style.display = 'none';
+            if (caret) caret.style.transform = 'rotate(0deg)';
+        }
+
         function setupEventListeners() {
             document.querySelectorAll('.modal-overlay').forEach(overlay => {
                 overlay.addEventListener('click', (e) => {
